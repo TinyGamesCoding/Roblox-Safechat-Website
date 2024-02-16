@@ -406,7 +406,7 @@
         parenttext.textContent = " ";
 
         if (parents != null && Array.isArray(parents)) {
-            parenttext.textContent = " (Parent: " + parents[parents.length - 1] + ") ";
+            if (parents[parents.length - 1] != text) parenttext.textContent = " (Parent: " + parents[parents.length - 1] + ") ";
         }
         parenttext.style.fontSize = "14px"
         message.appendChild(parenttext);
