@@ -31,7 +31,8 @@
 </style>
 
 <div style="position: fixed; right: 10px;"></div>
-<copyText style="position: fixed; bottom: 10px; right: 10px; font-size: 28px;" class="hidden">Copied the text!</copyText>
+<copyText style="position: fixed; bottom: 10px; right: 10px; font-size: 28px;" class="hidden">Copied the text!
+</copyText>
 
 <form autocomplete="off">
     <input type="text" id="search" placeholder="Search..">
@@ -390,45 +391,74 @@
         ]
     ]
     let list = document.getElementsByTagName("safechatStart")[0];
-    const createMenuItems = (messages, text, parent, prevParent) => {
+
+    function makeSafechatText(text, parents, search) {
+        if (text != null && !checkContainsText(text, parents, search)) return;
+        let message = document.createElement('li');
+        message.innerText = text;
+
+        let button = document.createElement('button');
+        button.textContent = "Copy Message";
+        button.style.fontSize = "18px"
+        list.appendChild(message);
+
+        let parenttext = document.createElement('text');
+        parenttext.textContent = " ";
+
+        if (parents != null && Array.isArray(parents)) {
+            parenttext.textContent = " (Parent: " + parents[parents.length - 1] + ") ";
+        }
+        parenttext.style.fontSize = "14px"
+        message.appendChild(parenttext);
+
+        message.appendChild(button);
+
+        button.addEventListener('click', () => {
+            copyText(text)
+        });
+    }
+
+    const createMenuItems = (messages, parents, search) => {
         return messages.map((item) => {
             if (Array.isArray(item)) {
-                let previousParent = prevParent
-                if (messages == safechatMessages) previousParent == null
-                if (previousParent == null) {
-                    previousParent = item[0]
+                let [groupName, ...groupMessages] = item;
+                let curParents = parents
+                if (curParents == null) {
+                    curParents = [groupName]
                 }
 
-                return createMenuItems(item, text, item[0], previousParent)
+                makeSafechatText(groupName, curParents, search);
+
+                if (!curParents.includes(groupName)) {
+                    curParents.push(groupName);
+                }
+                let result = createMenuItems(groupMessages, curParents, search);
+
+                if (curParents.length > 1) {
+                    curParents.pop();
+                }
+
+                return result;
             } else {
-                if (text != null && !item.toLowerCase().startsWith(text.toLowerCase())) return;
-                let message = document.createElement('li');
-                message.innerText = item;
-
-                let button = document.createElement('button');
-                button.textContent = "Copy Message";
-                button.style.fontSize = "18px"
-                list.appendChild(message);
-
-                let parenttext = document.createElement('text');
-                parenttext.textContent = " ";
-                if (parent != null && parent != item) {
-                    parenttext.textContent = " (Parent: " + parent + ") ";
-                } else if (prevParent != null && prevParent != item) {
-                    parenttext.textContent = " (Parent: " + prevParent + ") ";
+                if (checkContainsText(item, parents, search)) {
+                    makeSafechatText(item, parents, search);
                 }
-                parenttext.style.fontSize = "14px"
-                message.appendChild(parenttext);
-
-                message.appendChild(button);
-
-                button.addEventListener('click', () => {
-                    copyText(item)
-                });
-                return
+                return;
             }
         });
     };
+
+    function checkContainsText(text, parents, search) {
+        if (search == null) return true;
+        if (text.toLowerCase().startsWith(search.toLowerCase())) return true;
+        if (parents) {
+            for (let parent of parents) {
+                if (parent.toLowerCase().startsWith(search.toLowerCase())) return true;
+            }
+        }
+        return false;
+    }
+
 
     function copyText(text) {
         navigator.clipboard.writeText(text)
@@ -446,7 +476,7 @@
         while (list.firstChild) {
             list.removeChild(list.lastChild);
         }
-        createMenuItems(safechatMessages, search.value)
+        createMenuItems(safechatMessages, null, search.value)
     }
 
     createMenuItems(safechatMessages)
